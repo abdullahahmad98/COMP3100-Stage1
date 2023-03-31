@@ -66,13 +66,14 @@ class MyClient{
 			str2dArr[i] = strArr[i].split(" ");
 		}
 
-		
+		/*
 		for (int i=0; i < str2dArr.length; i++) {
 			for (int j=0; j < str2dArr[i].length; j++) {
 				System.out.print(str2dArr[i][j] + " ");
 			}
 			System.out.println();
 		}
+		*/
 
     	dout.write(("OK\n").getBytes()); 
     	dout.flush();
