@@ -1,65 +1,73 @@
-import java.net.*;  
-import java.io.*;  
-class MyClient{  
-public static void main(String args[])throws Exception{  
-	Socket s=new Socket("localhost",50000);  //port  
-	DataOutputStream dout=new DataOutputStream(s.getOutputStream());  
+import java.net.*;
+import java.io.*;
+
+class MyClient{
+public static void main(String args[])throws Exception{
+	Socket s=new Socket("localhost",50000);
+	DataOutputStream dout=new DataOutputStream(s.getOutputStream());
 	BufferedReader in = new BufferedReader(new InputStreamReader(s.getInputStream()));
 
-	String str="",str2="";
-	dout.write(("HELO\n").getBytes());
-	dout.flush(); 
-	str=in.readLine();
-	String username = System.getProperty("user.name");
-	dout.write(("AUTH "+username+"\n").getBytes());
-	dout.flush(); 
-	str=in.readLine();
+	String serverResponse = sendAndReceive(dout, in, "HELO\n");
 
-	boolean state = true;
+	String user = System.getProperty("user.name");
+	serverResponse = sendAndReceive(dout, in, "AUTH "+user+"\n");
+
+	boolean firstTime = true;
 	int jobID = 0, maxCores = 0, nRecs = 0, n = 0, cores = 0;
 	String maxType="";
-	String[] Array = null;
-	while(!str.equals("NONE")){
-		dout.write(("REDY\n").getBytes());
-		dout.flush();
-		str2=in.readLine();
-		if(state){
-			dout.write(("GETS All\n").getBytes());
-			dout.flush();
-			str=in.readLine();
-			Array = str.split(" ");
-			nRecs = Integer.parseInt(Array[1]);
-			dout.write(("OK\n").getBytes());
-			dout.flush();
+	String serverResponse2 = "";
+	String[] jobFields = null;
+	while(!serverResponse.equals("NONE")){
+		serverResponse2=sendAndReceive(dout, in, "REDY\n");
+		if(firstTime){
+			serverResponse=sendAndReceive(dout, in, "GETS All\n");
+			jobFields = serverResponse.split(" ");
+			nRecs = Integer.parseInt(jobFields[1]);
+			send(dout, "OK\n");
 			for(int i=0;i<nRecs;i++){
-				String[] Array2=null;
-				str=in.readLine();
-				Array2 = str.split(" ");
-				cores = Integer.parseInt(Array2[4]);
+				String[] jobFields2=null;
+				serverResponse=receive(in);
+				jobFields2 = serverResponse.split(" ");
+				cores = Integer.parseInt(jobFields2[4]);
 				if(cores > maxCores){
-					maxType = Array2[0];
+					maxType = jobFields2[0];
 					maxCores = cores;
 				}
-				if(maxType.equals(Array2[0])) n = Integer.parseInt(Array2[1]);
+				if(maxType.equals(jobFields2[0])) n = Integer.parseInt(jobFields2[1]);
 			}
 			n++;
-			dout.write(("OK\n").getBytes());
-			dout.flush();
-			str=in.readLine();
-			state = false;
+			serverResponse=sendAndReceive(dout, in, "OK\n");
+			firstTime = false;
 		}
 
-		if(str2.contains("JOBN")){
-			dout.write(("SCHD "+jobID+" "+maxType+" "+jobID%n+"\n").getBytes());
-			dout.flush();
+		if(serverResponse2.contains("JOBN")){
+			serverResponse=sendAndReceive(dout, in, "SCHD "+jobID+" "+maxType+" "+jobID%n+"\n");
 			jobID++;
-			str=in.readLine();
 		}
-		else str = str2;
+		else serverResponse = serverResponse2;
 	}
 
-	dout.write(("QUIT\n").getBytes());
-	dout.flush();
-	dout.close(); 
+	send(dout, "QUIT\n");
+	dout.close();
 	s.close();
-}}
+}
+
+
+	//A method to send a message and receive a response
+	public static String sendAndReceive(DataOutputStream dout, BufferedReader in, String message) throws IOException {
+		send(dout, message);
+		return receive(in);
+	}
+
+	//A method to send a message
+	public static void send(DataOutputStream dout, String message) throws IOException {
+		dout.write(message.getBytes());
+		dout.flush();
+	}
+
+	//A method to receive a response
+	public static String receive(BufferedReader in) throws IOException {
+		return in.readLine();
+	}
+
+}
