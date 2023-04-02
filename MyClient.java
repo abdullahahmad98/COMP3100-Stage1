@@ -17,6 +17,7 @@ public static void main(String args[])throws Exception{
 	String maxType="";
 	String serverResponse2 = "";
 	String[] jobFields = null;
+	
 	while(!serverResponse.equals("NONE")){
 		serverResponse2=sendAndReceive(dout, in, "REDY\n");
 		if(firstTime){
@@ -69,5 +70,23 @@ public static void main(String args[])throws Exception{
 	public static String receive(BufferedReader in) throws IOException {
 		return in.readLine();
 	}
+
+    //A method to find the largest server type based on cores
+    public static String findLargestType(BufferedReader in, int nRecs) throws IOException {
+        String maxType = "";
+        int maxCores = 0, n=0;
+        for (int i = 0; i < nRecs; i++) {
+            String[] array2 = null;
+            String str = in.readLine();
+            array2 = str.split(" ");
+            int cores = Integer.parseInt(array2[4]);
+            if (cores > maxCores) {
+                maxType = array2[0];
+                maxCores = cores;
+            }
+            if (maxType.equals(array2[0])) n = Integer.parseInt(array2[1]);
+        }
+        return maxType;
+    }
 
 }
